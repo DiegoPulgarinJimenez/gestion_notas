@@ -1,0 +1,31 @@
+services:
+
+  mongo:
+    image: mongo:9.0.4-resolute
+    container_name: mongo-db
+
+    ports:
+      - "27017:27017"
+
+    volumes:
+      - mongo-data:/data/db
+
+    environment:
+      MONGO_INITDB_DATABASE: gestion-notas-db
+
+  app:
+    build: .
+
+    container_name: gestion-notas-app
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      - mongo
+
+    environment:
+      SPRING_MONGODB_URI: mongodb://mongo:27017/gestion-notas-db
+
+volumes:
+  mongo-data:
