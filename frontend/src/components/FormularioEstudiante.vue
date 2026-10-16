@@ -132,6 +132,11 @@
             {{ estudianteEncontrado.cedula }}
           </p>
 
+          <p>
+            Promedio:
+            {{ estudianteEncontrado.promedio }}
+          </p>
+
           <ul class="list-group">
 
             <li

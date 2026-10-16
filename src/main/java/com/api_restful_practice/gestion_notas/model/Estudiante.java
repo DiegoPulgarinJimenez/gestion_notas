@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -19,5 +20,8 @@ public class Estudiante {
     private String cedula;
     private String nombre;
     private List<Materia> materias;
+
+    @Transient
+    private Double promedio;
 
 }
