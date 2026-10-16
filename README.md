@@ -12,7 +12,7 @@ y la lógica, y un **frontend** (interfaz en Vue) con el que interactúa el usua
 ## ¿Qué hace?
 
 - **Registrar estudiante:** ingresar nombre, cédula y una o varias materias, cada una con su nota.
-- **Consultar estudiante:** buscar por cédula y ver sus materias y notas.
+- **Consultar estudiante:** buscar por cédula y ver sus materias, notas y el **promedio**.
 - **Persistencia:** los datos quedan guardados en una base de datos MongoDB.
 - **Documentación de la API:** incluye Swagger para probar los endpoints desde el navegador.
 
@@ -34,11 +34,11 @@ gestion-notas/
 │   │   │   │   └── Materia.java               # Nombre de la materia y nota
 │   │   │   ├── repository/                    # Acceso a la base de datos
 │   │   │   │   └── EstudianteRepository.java
-│   │   │   └── service/                       # Lógica de negocio (guardar, buscar)
+│   │   │   └── service/                       # Lógica de negocio (guardar, buscar, promedio)
 │   │   │       └── EstudianteService.java
 │   │   └── resources/
 │   │       └── application.properties         # Configuración (nombre, conexión a MongoDB)
-│   └── test/                                  # Pruebas del backend
+│   └── test/                                  # Pruebas unitarias (JUnit, Mockito, MockMvc)
 │
 ├── frontend/                     # Frontend (interfaz en Vue)
 │   ├── src/
@@ -83,10 +83,15 @@ Estudiante
 ├── id         (generado automáticamente)
 ├── cedula     (texto)
 ├── nombre     (texto)
-└── materias   (lista de Materia)
-        ├── nombre  (texto)
-        └── nota    (número decimal)
+├── materias   (lista de Materia)
+│       ├── nombre  (texto)
+│       └── nota    (número decimal)
+└── promedio   (calculado a partir de las materias — NO se guarda en la base de datos)
 ```
+
+> **El promedio es un dato derivado.** Se calcula al momento de guardar y de consultar,
+> a partir de las `materias`, y **no** se persiste en MongoDB. Así se evita que quede
+> desactualizado si las materias cambian.
 
 Ejemplo en JSON:
 
@@ -248,11 +253,14 @@ a `localhost`:
 
 ## Tests
 
-El proyecto incluye una única prueba, ubicada en:
+El proyecto tiene **pruebas unitarias** en `src/test/java/...`, además del *smoke test*
+que genera Spring Initializr:
 
-```
-src/test/java/com/api_restful_practice/gestion_notas/GestionNotasApplicationTests.java
-```
+| Archivo | Tipo | Qué cubre |
+| --- | --- | --- |
+| `GestionNotasApplicationTests` | *Smoke test* (`@SpringBootTest`) | Que la aplicación arranca |
+| `EstudianteServiceTest` | Unitario (**Mockito**) | Lógica de `EstudianteService` |
+| `EstudianteControllerTest` | Web (**`@WebMvcTest` + MockMvc**) | Endpoints HTTP |
 
 ### ¿Qué es un "smoke test"?
 
@@ -261,39 +269,39 @@ para comprobar que **lo esencial funciona**. El nombre viene de la electrónica:
 un aparato y, si no sale humo, "al menos enciende". En software, un smoke test valida que
 el sistema **arranca sin errores**, no que cada funcionalidad sea correcta.
 
-### ¿Qué hace `contextLoads()`?
+`GestionNotasApplicationTests` usa `@SpringBootTest`, que levanta la aplicación completa
+(inicia Spring, crea los *beans* y prepara la conexión con MongoDB). Su único método,
+`contextLoads()`, no ejecuta ninguna acción: solo comprueba que el **contexto carga
+correctamente**. Si falta una dependencia o la configuración es inválida, este test falla.
 
-Es el único test del proyecto:
+### Pruebas del service (Mockito)
 
-```java
-@SpringBootTest
-class GestionNotasApplicationTests {
+`EstudianteServiceTest` prueba la **lógica de negocio sin base de datos**: se simula
+(*mock*) el `EstudianteRepository` para no depender de MongoDB. Cubre:
 
-    @Test
-    void contextLoads() {
-    }
-}
-```
+- el cálculo del promedio (lista nula, vacía, un valor, varios valores y el redondeo),
+- buscar por cédula cuando existe y cuando **no** (lanza excepción),
+- el guardado de un estudiante.
 
-- **`@SpringBootTest`** levanta la aplicación completa en un entorno de prueba: inicia
-  Spring, crea los *beans* (`Controller`, `Service`, `Repository`), carga la configuración
-  (`application.properties`) y prepara la conexión con MongoDB.
-- **`contextLoads()`** no tiene cuerpo: no ejecuta ninguna acción. Solo comprueba que el
-  "contexto" de la aplicación **carga correctamente**.
+### Pruebas del controller (MockMvc)
 
-Es decir, **no prueba la lógica** (guardar o buscar estudiantes), sino que la aplicación
-**arranca sin fallos**. Si falta una dependencia, un bean está mal conectado o la
-configuración es inválida, este test falla.
+`EstudianteControllerTest` prueba los **endpoints HTTP** sin levantar todo el servidor:
+simula el `EstudianteService` y usa `MockMvc` para lanzar peticiones. Cubre:
 
-### Cómo ejecutarlo
+- `GET /api/v1/estudiantes/{cedula}` → `200` con `promedio` y los enlaces HATEOAS,
+- `POST /api/v1/estudiantes` → `200` con el estudiante guardado.
+
+### Cómo ejecutarlos
 
 ```bash
-./mvnw test
+./mvnw test                    # todas las pruebas
+./mvnw test -Dtest=EstudianteServiceTest      # solo el service
+./mvnw test -Dtest=EstudianteControllerTest   # solo el controller
 ```
 
-> Al ser un `@SpringBootTest`, se arranca el contexto completo, incluida la configuración
-> de MongoDB. Por eso se recomienda tener MongoDB corriendo antes de ejecutarlo.
-> Todavía no hay tests de los endpoints ni del servicio.
+> Las pruebas del service y del controller **no** necesitan MongoDB (usan mocks). El
+> smoke test (`contextLoads`) sí arranca el contexto completo, por lo que se recomienda
+> tener MongoDB corriendo antes de ejecutarlo.
 
 ---
 
@@ -342,6 +350,7 @@ Así, la respuesta JSON de una consulta se ve parecida a esto:
   "materias": [
     { "nombre": "Bases de Datos", "nota": 4.2 }
   ],
+  "promedio": 4.2,
   "_links": {
     "self":  { "href": "http://localhost:8080/api/v1/estudiantes/123456" },
     "crear": { "href": "http://localhost:8080/api/v1/estudiantes" }
