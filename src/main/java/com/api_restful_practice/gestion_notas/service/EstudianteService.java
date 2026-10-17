@@ -31,15 +31,26 @@ public class EstudianteService {
     }
 
     public double calcularPromedio(List<Materia> materias) {
-        if (materias == null || materias.isEmpty()) {
+        if (esVacia(materias)) {
             return 0.0;
         }
 
+        return redondear(sumarNotas(materias) / materias.size());
+    }
+
+    private boolean esVacia(List<Materia> materias) {
+        return materias == null || materias.isEmpty();
+    }
+
+    private double sumarNotas(List<Materia> materias) {
         double suma = 0;
         for (Materia materia : materias) {
             suma += materia.getNota();
         }
+        return suma;
+    }
 
-        return Math.round((suma / materias.size()) * 10.0) / 10.0;
+    private double redondear(double valor) {
+        return Math.round(valor * 10.0) / 10.0;
     }
 }
