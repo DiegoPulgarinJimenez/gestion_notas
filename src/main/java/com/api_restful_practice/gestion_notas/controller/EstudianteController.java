@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.api_restful_practice.gestion_notas.service.EstudianteService;
 
+import java.util.List;
+
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -26,6 +28,11 @@ public class EstudianteController {
     public ResponseEntity<Estudiante> crear(@RequestBody Estudiante estudiante){
 
         return ResponseEntity.ok(service.guardar(estudiante));
+    }
+
+    @GetMapping
+    public List<Estudiante> listar() {
+        return service.listarTodos();
     }
 
     @GetMapping("/{cedula}")

@@ -12,7 +12,8 @@ y la lógica, y un **frontend** (interfaz en Vue) con el que interactúa el usua
 ## ¿Qué hace?
 
 - **Registrar estudiante:** ingresar nombre, cédula y una o varias materias, cada una con su nota.
-- **Consultar estudiante:** buscar por cédula y ver sus materias, notas y el **promedio**.
+- **Consultar estudiante:** buscar por cédula y ver sus materias, notas, el **promedio** y su **clasificación** (APROBADO / REPROBADO).
+- **Listar estudiantes:** obtener todos los estudiantes registrados.
 - **Persistencia:** los datos quedan guardados en una base de datos MongoDB.
 - **Documentación de la API:** incluye Swagger para probar los endpoints desde el navegador.
 
@@ -80,18 +81,19 @@ Un **estudiante** se guarda en MongoDB con esta forma:
 
 ```
 Estudiante
-├── id         (generado automáticamente)
-├── cedula     (texto)
-├── nombre     (texto)
-├── materias   (lista de Materia)
+├── id            (generado automáticamente)
+├── cedula        (texto)
+├── nombre        (texto)
+├── materias      (lista de Materia)
 │       ├── nombre  (texto)
 │       └── nota    (número decimal)
-└── promedio   (calculado a partir de las materias — NO se guarda en la base de datos)
+├── promedio      (calculado a partir de las materias — NO se guarda en la base de datos)
+└── clasificacion (APROBADO / REPROBADO según el promedio — NO se guarda)
 ```
 
-> **El promedio es un dato derivado.** Se calcula al momento de guardar y de consultar,
-> a partir de las `materias`, y **no** se persiste en MongoDB. Así se evita que quede
-> desactualizado si las materias cambian.
+> **El promedio y la clasificación son datos derivados.** Se calculan al momento de
+> guardar, consultar o listar, a partir de las `materias`, y **no** se persisten en MongoDB.
+> Así se evita que queden desactualizados si las materias cambian.
 
 Ejemplo en JSON:
 
@@ -310,6 +312,7 @@ simula el `EstudianteService` y usa `MockMvc` para lanzar peticiones. Cubre:
 | Método | Endpoint | Descripción |
 | --- | --- | --- |
 | `POST` | `/api/v1/estudiantes` | Registrar un estudiante |
+| `GET` | `/api/v1/estudiantes` | Listar todos los estudiantes |
 | `GET` | `/api/v1/estudiantes/{cedula}` | Consultar un estudiante por su cédula |
 
 Documentación interactiva (Swagger): `http://localhost:8080/swagger-ui.html`
@@ -324,6 +327,9 @@ curl -X POST http://localhost:8080/api/v1/estudiantes \
 
 # Consultar
 curl http://localhost:8080/api/v1/estudiantes/123456
+
+# Listar todos
+curl http://localhost:8080/api/v1/estudiantes
 ```
 
 ---
@@ -351,6 +357,7 @@ Así, la respuesta JSON de una consulta se ve parecida a esto:
     { "nombre": "Bases de Datos", "nota": 4.2 }
   ],
   "promedio": 4.2,
+  "clasificacion": "APROBADO",
   "_links": {
     "self":  { "href": "http://localhost:8080/api/v1/estudiantes/123456" },
     "crear": { "href": "http://localhost:8080/api/v1/estudiantes" }

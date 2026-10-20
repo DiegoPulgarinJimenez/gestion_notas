@@ -135,6 +135,7 @@
           <p>
             Promedio:
             {{ estudianteEncontrado.promedio }}
+            ({{ estudianteEncontrado.clasificacion }})
           </p>
 
           <ul class="list-group">

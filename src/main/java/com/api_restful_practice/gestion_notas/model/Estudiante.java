@@ -24,4 +24,7 @@ public class Estudiante {
     @Transient
     private Double promedio;
 
+    @Transient
+    private String clasificacion;
+
 }

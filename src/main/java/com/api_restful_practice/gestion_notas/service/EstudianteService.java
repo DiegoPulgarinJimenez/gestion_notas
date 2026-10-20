@@ -11,6 +11,8 @@ import java.util.List;
 @Service
 public class EstudianteService {
 
+    private static final double NOTA_MINIMA = 3.0;
+
     @Autowired
     private final EstudianteRepository repository;
 
@@ -19,15 +21,18 @@ public class EstudianteService {
     }
 
     public Estudiante guardar(Estudiante estudiante) {
-        Estudiante guardado = repository.save(estudiante);
-        guardado.setPromedio(calcularPromedio(guardado.getMaterias()));
-        return guardado;
+        return enriquecer(repository.save(estudiante));
     }
 
     public Estudiante buscarPorCedula(String cedula) {
         Estudiante estudiante = repository.findByCedula(cedula).orElseThrow();
-        estudiante.setPromedio(calcularPromedio(estudiante.getMaterias()));
-        return estudiante;
+        return enriquecer(estudiante);
+    }
+
+    public List<Estudiante> listarTodos() {
+        return repository.findAll().stream()
+                .map(this::enriquecer)
+                .toList();
     }
 
     public double calcularPromedio(List<Materia> materias) {
@@ -36,6 +41,20 @@ public class EstudianteService {
         }
 
         return redondear(sumarNotas(materias) / materias.size());
+    }
+
+    public String clasificar(double promedio) {
+        if (promedio >= NOTA_MINIMA) {
+            return "APROBADO";
+        }
+        return "REPROBADO";
+    }
+
+    private Estudiante enriquecer(Estudiante estudiante) {
+        double promedio = calcularPromedio(estudiante.getMaterias());
+        estudiante.setPromedio(promedio);
+        estudiante.setClasificacion(clasificar(promedio));
+        return estudiante;
     }
 
     private boolean esVacia(List<Materia> materias) {
